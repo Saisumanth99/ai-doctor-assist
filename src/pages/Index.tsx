@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { ChatInterface } from "@/components/ChatInterface";
 import { DoctorCard } from "@/components/DoctorCard";
 import { FileUploadZone } from "@/components/FileUploadZone";
@@ -10,6 +11,7 @@ import { Bot, Stethoscope, FileSearch, Calendar, Shield, Clock } from "lucide-re
 import heroImage from "@/assets/medical-hero.jpg";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("chat");
 
   const sampleDoctors = [
@@ -102,23 +104,14 @@ const Index = () => {
                 Your intelligent medical companion for symptom analysis, document review, and connecting with the right healthcare professionals.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up">
+            <div className="flex justify-center animate-slide-up">
               <Button 
                 size="lg" 
                 className="bg-primary hover:bg-primary-glow shadow-glow text-lg px-8 py-3 transition-all duration-300 animate-pulse-glow"
-                onClick={() => setActiveTab("chat")}
+                onClick={() => navigate("/chat")}
               >
                 <Bot className="mr-2 h-5 w-5" />
                 Start Consultation
-              </Button>
-              <Button 
-                variant="outline" 
-                size="lg"
-                className="hover:bg-accent hover:shadow-medical transition-all duration-300 text-lg px-8 py-3"
-                onClick={() => setActiveTab("upload")}
-              >
-                <FileSearch className="mr-2 h-5 w-5" />
-                Upload Documents
               </Button>
             </div>
           </div>
@@ -163,66 +156,23 @@ const Index = () => {
       {/* Main Interface */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-7xl mx-auto">
-            <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto mb-8 bg-card shadow-card">
-              <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Chat
-              </TabsTrigger>
-              <TabsTrigger value="upload" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Upload
-              </TabsTrigger>
-              <TabsTrigger value="doctors" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                Doctors
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="chat" className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-semibold text-foreground mb-2">
-                  AI Medical Consultation
-                </h3>
-                <p className="text-muted-foreground">
-                  Describe your symptoms or ask medical questions to get AI-powered insights
-                </p>
-              </div>
-              <ChatInterface />
-            </TabsContent>
-
-            <TabsContent value="upload" className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-semibold text-foreground mb-2">
-                  Upload Medical Documents
-                </h3>
-                <p className="text-muted-foreground">
-                  Share your medical records, lab results, or images for AI analysis
-                </p>
-              </div>
-              <div className="max-w-4xl mx-auto">
-                <FileUploadZone />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="doctors" className="space-y-6">
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-semibold text-foreground mb-2">
-                  Recommended Specialists
-                </h3>
-                <p className="text-muted-foreground">
-                  Based on your consultation, here are specialists available for appointments
-                </p>
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-                {sampleDoctors.map((doctor, index) => (
-                  <div 
-                    key={doctor.id}
-                    style={{ animationDelay: `${index * 0.2}s` }}
-                  >
-                    <DoctorCard doctor={doctor} />
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+          <div className="text-center">
+            <h3 className="text-2xl font-semibold text-foreground mb-4">
+              Ready to get started?
+            </h3>
+            <p className="text-muted-foreground max-w-2xl mx-auto mb-8">
+              Click the button above to start your medical consultation, upload documents, and get connected with the right specialists.
+            </p>
+            <Button 
+              variant="outline" 
+              size="lg"
+              onClick={() => navigate("/doctors")}
+              className="hover:bg-accent hover:shadow-medical transition-all duration-300 text-lg px-8 py-3"
+            >
+              <Stethoscope className="mr-2 h-5 w-5" />
+              Browse All Doctors
+            </Button>
+          </div>
         </div>
       </section>
 
