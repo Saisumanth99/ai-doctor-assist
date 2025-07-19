@@ -1,46 +1,35 @@
 import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DoctorCard } from "@/components/DoctorCard";
-import { ArrowLeft, Bot, Sparkles } from "lucide-react";
+import { ArrowLeft, Bot, Sparkles, Loader2 } from "lucide-react";
+import { DoctorsApiService, type Doctor } from "@/services/doctorsApi";
 
 const Doctors = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { fromChat, chatHistory } = location.state || {};
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const sampleDoctors = [
-    {
-      id: "1",
-      name: "Dr. Sarah Johnson",
-      specialty: "Cardiologist",
-      rating: 4.9,
-      reviews: 127,
-      location: "Manhattan Medical Center",
-      availableSlots: ["Today 2:00 PM", "Today 4:30 PM", "Tomorrow 10:00 AM", "Tomorrow 2:00 PM"],
-      experience: "15+ years",
-    },
-    {
-      id: "2", 
-      name: "Dr. Michael Chen",
-      specialty: "Dermatologist",
-      rating: 4.8,
-      reviews: 89,
-      location: "Downtown Skin Clinic",
-      availableSlots: ["Today 3:00 PM", "Tomorrow 9:00 AM", "Tomorrow 1:00 PM", "Wed 11:00 AM"],
-      experience: "12+ years",
-    },
-    {
-      id: "3",
-      name: "Dr. Emily Rodriguez",
-      specialty: "General Practitioner", 
-      rating: 4.9,
-      reviews: 156,
-      location: "Central Health Clinic",
-      availableSlots: ["Today 1:00 PM", "Today 5:00 PM", "Tomorrow 8:00 AM", "Tomorrow 3:00 PM"],
-      experience: "18+ years",
-    },
-  ];
+  useEffect(() => {
+    const loadDoctors = async () => {
+      setLoading(true);
+      try {
+        const response = fromChat && chatHistory 
+          ? await DoctorsApiService.getRecommendedDoctors(chatHistory)
+          : await DoctorsApiService.getAllDoctors();
+        setDoctors(response.doctors);
+      } catch (error) {
+        console.error('Failed to load doctors:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDoctors();
+  }, [fromChat, chatHistory]);
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -89,17 +78,24 @@ const Doctors = () => {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {sampleDoctors.map((doctor, index) => (
-            <div 
-              key={doctor.id}
-              className="animate-fade-in"
-              style={{ animationDelay: `${index * 0.2}s` }}
-            >
-              <DoctorCard doctor={doctor} />
-            </div>
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex justify-center items-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Loading doctors...</span>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {doctors.map((doctor, index) => (
+              <div 
+                key={doctor.id}
+                className="animate-fade-in"
+                style={{ animationDelay: `${index * 0.2}s` }}
+              >
+                <DoctorCard doctor={doctor} />
+              </div>
+            ))}
+          </div>
+        )}
 
         {fromChat && (
           <div className="mt-8 text-center">

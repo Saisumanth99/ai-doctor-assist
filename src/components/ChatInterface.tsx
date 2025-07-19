@@ -1,61 +1,109 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Upload, FileText, Image, Bot, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Paperclip, Send, Bot, User, Loader2 } from "lucide-react";
+import { ChatApiService, type ChatMessage } from "@/services/chatApi";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-interface Message {
-  id: string;
-  content: string;
-  sender: "user" | "bot";
-  timestamp: Date;
-  attachments?: string[];
+interface ChatInterfaceProps {
+  onSuggestAppointment?: (chatHistory: ChatMessage[]) => void;
 }
 
-export const ChatInterface = () => {
-  const [messages, setMessages] = useState<Message[]>([
+export const ChatInterface = ({ onSuggestAppointment }: ChatInterfaceProps) => {
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
-      content: "Hello! I'm MedicalGPT, your AI-powered medical assistant. I can help analyze your symptoms, review medical documents or images, and recommend appropriate specialists. How can I assist you today?",
+      content: "Hello! I'm your AI medical assistant. I can help analyze your symptoms, review medical documents, and connect you with the right specialists. How can I assist you today?",
       sender: "bot",
       timestamp: new Date(),
     },
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
-    const userMessage: Message = {
+    const userMessage: ChatMessage = {
       id: Date.now().toString(),
       content: inputValue,
       sender: "user",
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const botResponse: Message = {
+    try {
+      const response = await ChatApiService.sendMessage(inputValue, messages);
+      
+      const botMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        content: "Thank you for your question. Based on the information you've provided, I recommend consulting with a specialist. Let me suggest some doctors and available appointments for you.",
+        content: response.message,
         sender: "bot",
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, botResponse]);
+      
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message. Please try again.');
+    } finally {
       setIsTyping(false);
-    }, 2000);
+    }
   };
 
-  const handleFileUpload = () => {
-    // Placeholder for file upload functionality
-    console.log("File upload clicked");
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    
+    try {
+      for (const file of Array.from(files)) {
+        const uploadResponse = await ChatApiService.uploadFile(file);
+        
+        // Add user message showing the uploaded file
+        const fileMessage: ChatMessage = {
+          id: Date.now().toString(),
+          content: `📎 Uploaded: ${file.name}`,
+          sender: "user",
+          timestamp: new Date(),
+          attachments: [uploadResponse.fileId]
+        };
+        
+        setMessages((prev) => [...prev, fileMessage]);
+        
+        // Add bot response with analysis
+        if (uploadResponse.analysisResult) {
+          const analysisMessage: ChatMessage = {
+            id: (Date.now() + 1).toString(),
+            content: uploadResponse.analysisResult,
+            sender: "bot",
+            timestamp: new Date(),
+          };
+          
+          setMessages((prev) => [...prev, analysisMessage]);
+        }
+      }
+      
+      toast.success('Files uploaded successfully');
+    } catch (error) {
+      console.error('Failed to upload files:', error);
+      toast.error('Failed to upload files. Please try again.');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   return (
@@ -63,14 +111,26 @@ export const ChatInterface = () => {
       <div className="flex flex-col h-full">
         {/* Header */}
         <div className="p-4 border-b bg-gradient-medical text-white rounded-t-lg">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-full">
-              <Bot className="h-6 w-6" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-full">
+                <Bot className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">MedicalGPT Assistant</h3>
+                <p className="text-white/80 text-sm">AI-powered medical consultation</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-lg">MedicalGPT Assistant</h3>
-              <p className="text-white/80 text-sm">AI-powered medical consultation</p>
-            </div>
+            {onSuggestAppointment && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onSuggestAppointment(messages)}
+                className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+              >
+                Suggest Appointment
+              </Button>
+            )}
           </div>
         </div>
 
@@ -100,6 +160,15 @@ export const ChatInterface = () => {
                     : "bg-card text-card-foreground mr-12"
                 )}>
                   <p className="text-sm leading-relaxed">{message.content}</p>
+                  {message.attachments && (
+                    <div className="mt-2 flex gap-2">
+                      {message.attachments.map((attachment, index) => (
+                        <Badge key={index} variant="secondary" className="text-xs">
+                          📎 {attachment}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                   <span className="text-xs opacity-70 mt-1 block">
                     {message.timestamp.toLocaleTimeString([], { 
                       hour: '2-digit', 
@@ -130,13 +199,26 @@ export const ChatInterface = () => {
         {/* Input */}
         <div className="p-4 border-t bg-muted/30">
           <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.txt"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
-              onClick={handleFileUpload}
-              className="shrink-0 hover:bg-accent hover:shadow-medical transition-all duration-300"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="hover:bg-accent"
             >
-              <Upload className="h-4 w-4" />
+              {isUploading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Paperclip className="h-5 w-5" />
+              )}
             </Button>
             <div className="flex-1 relative">
               <Input
@@ -155,16 +237,6 @@ export const ChatInterface = () => {
                 <Send className="h-4 w-4" />
               </Button>
             </div>
-          </div>
-          <div className="flex gap-2 mt-2">
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
-              <FileText className="h-3 w-3 mr-1" />
-              Upload Document
-            </Button>
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-foreground">
-              <Image className="h-3 w-3 mr-1" />
-              Upload Image
-            </Button>
           </div>
         </div>
       </div>

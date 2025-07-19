@@ -1,51 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChatInterface } from "@/components/ChatInterface";
-import { DoctorCard } from "@/components/DoctorCard";
-import { FileUploadZone } from "@/components/FileUploadZone";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Bot, Stethoscope, FileSearch, Calendar, Shield, Clock } from "lucide-react";
+import { DoctorsApiService, type Doctor } from "@/services/doctorsApi";
 import heroImage from "@/assets/medical-hero.jpg";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("chat");
-
-  const sampleDoctors = [
-    {
-      id: "1",
-      name: "Dr. Sarah Johnson",
-      specialty: "Cardiologist",
-      rating: 4.9,
-      reviews: 127,
-      location: "Manhattan Medical Center",
-      availableSlots: ["Today 2:00 PM", "Today 4:30 PM", "Tomorrow 10:00 AM", "Tomorrow 2:00 PM"],
-      experience: "15+ years",
-    },
-    {
-      id: "2", 
-      name: "Dr. Michael Chen",
-      specialty: "Dermatologist",
-      rating: 4.8,
-      reviews: 89,
-      location: "Downtown Skin Clinic",
-      availableSlots: ["Today 3:00 PM", "Tomorrow 9:00 AM", "Tomorrow 1:00 PM", "Wed 11:00 AM"],
-      experience: "12+ years",
-    },
-    {
-      id: "3",
-      name: "Dr. Emily Rodriguez",
-      specialty: "General Practitioner", 
-      rating: 4.9,
-      reviews: 156,
-      location: "Central Health Clinic",
-      availableSlots: ["Today 1:00 PM", "Today 5:00 PM", "Tomorrow 8:00 AM", "Tomorrow 3:00 PM"],
-      experience: "18+ years",
-    },
-  ];
 
   const features = [
     {
